@@ -1,11 +1,14 @@
 #include <cpr/cpr.h>
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <argparse.hpp>
 #include <dbg.h>
 
 #include <iostream>
 #include <fstream>
 #include <windows.h>
+#include <corecrt_io.h>
 
 #pragma comment(lib, "urlmon.lib")
 
@@ -57,6 +60,23 @@ std::string GetToken() {
 	return token;
 }
 
+bool CheckJson() {
+	if (_access("list.json", 0) != 0) {
+		dbg("未创建list.json");
+		FILE* fp;
+		errno_t err = fopen_s(&fp, "list.json", "w");
+
+		if (err != 0) {
+			dbg("创建list.json失败");
+			fclose(fp);
+			return false;
+		}
+		fprintf(fp, "[]");
+		fclose(fp);
+	}
+	return true;
+}
+
 void Upload(const std::string& name) {
 	dbg("上传", name);
 
@@ -71,13 +91,57 @@ void Upload(const std::string& name) {
 		}
 	);
 
+	if (response.status_code != 200) {
+		dbg("上传 失败", response.status_code);
+		return;
+	}
 	dbg("上传 状态码", response.status_code);
 	
-	json::Document document;
-	document.Parse(response.text.c_str());
+	json::Document upload;
+	upload.Parse(response.text.c_str());
 
-	dbg("上传 哈希", document["hash"].Get<const char*>());
-	dbg("上传 键值", document["key"].Get<const char*>());
+	dbg("上传 哈希", upload["hash"].Get<const char*>());
+	dbg("上传 键值", upload["key"].Get<const char*>());
+
+	std::ifstream fdata("list.json");
+	std::istreambuf_iterator<char> begin(fdata);
+	std::istreambuf_iterator<char> end;
+	std::string fileData(begin, end),
+		key = upload["key"].Get<const char*>();
+	fdata.close();
+
+	json::Document document;
+	json::Document::AllocatorType& allocator = document.GetAllocator();
+	document.Parse(fileData.c_str());
+
+	json::Value jObject(json::kObjectType);
+	
+	json::Value jName(json::kStringType);
+	jName.SetString(name.c_str(), name.size());
+	jObject.AddMember("name", jName, allocator);
+
+	json::Value jKey(json::kStringType);
+	jKey.SetString(key.c_str(), key.size());
+	jObject.AddMember("key", jKey, allocator);
+
+	document.PushBack(jObject, allocator);
+
+	json::StringBuffer buffer;
+	buffer.Clear();
+	json::Writer<json::StringBuffer> writer(buffer);
+
+	document.Accept(writer);
+	
+	FILE* fp;
+	errno_t err = fopen_s(&fp, "list.json", "w");
+	if (err != 0) {
+		dbg("上传 写list.json失败");
+		return;
+	}
+	fwrite(buffer.GetString(), strlen(buffer.GetString()), 1, fp);
+	fclose(fp);
+
+	dbg("上传 写list.json成功");
 
 	return;
 }
@@ -128,13 +192,14 @@ int main(int argc, char* argv[]) {
 		exit(0);
 	}
 
+	CheckJson();
+
 	Method method = program.get<Method>("method");
 	std::string data = program.get<std::string>("--data");
 
 	dbg(method);
 
-	switch (method)
-	{
+	switch (method) {
 	case Method::UPLOAD: {
 		Upload(data);
 		break;
