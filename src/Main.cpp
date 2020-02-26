@@ -101,14 +101,18 @@ void Upload(const std::string& name) {
 	json::Document upload;
 	upload.Parse(response.text.c_str());
 
-	dbg("上传 哈希", upload["hash"].Get<const char*>());
-	dbg("上传 键值", upload["key"].Get<const char*>());
+	std::string key = upload["key"].Get<const char*>(),
+		hash = upload["hash"].Get<const char*>();
+
+	dbg("上传 哈希", hash);
+	dbg("上传 键值", key);
+	std::string url = "https://static.codemao.cn/" + key;
+	dbg("下载支链", url);
 
 	std::ifstream fdata("list.json");
 	std::istreambuf_iterator<char> begin(fdata);
 	std::istreambuf_iterator<char> end;
-	std::string fileData(begin, end),
-		key = upload["key"].Get<const char*>();
+	std::string fileData(begin, end);
 	fdata.close();
 
 	json::Document document;
