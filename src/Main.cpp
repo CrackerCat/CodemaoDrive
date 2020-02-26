@@ -39,6 +39,29 @@ bool DownloadFiles(const char* url, const char* downloadPath)
 	else return false;
 }
 
+std::string GetPathShortName(std::string strFullName) {
+	auto string_replace = [](std::string& strBig, const std::string& strsrc, const std::string& strdst) {
+		std::string::size_type pos = 0;
+		std::string::size_type srclen = strsrc.size();
+		std::string::size_type dstlen = strdst.size();
+
+		while ((pos = strBig.find(strsrc, pos)) != std::string::npos)
+		{
+			strBig.replace(pos, srclen, strdst);
+			pos += dstlen;
+		}
+	};
+
+ 	if (strFullName.empty()) {
+		return "";
+	}
+
+	string_replace(strFullName, "/", "\\");
+	std::string::size_type iPos = strFullName.find_last_of('\\') + 1;
+
+	return strFullName.substr(iPos, strFullName.length() - iPos);
+}
+
 std::string GetToken() {
 	std::string token;
 
@@ -121,8 +144,9 @@ void Upload(const std::string& name) {
 
 	json::Value jObject(json::kObjectType);
 	
+	std::string shortName = GetPathShortName(name);
 	json::Value jName(json::kStringType);
-	jName.SetString(name.c_str(), name.size());
+	jName.SetString(shortName.c_str(), shortName.size());
 	jObject.AddMember("name", jName, allocator);
 
 	json::Value jKey(json::kStringType);
