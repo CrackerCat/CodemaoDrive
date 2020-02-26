@@ -125,7 +125,20 @@ void Upload(const std::string& name) {
 	jKey.SetString(key.c_str(), key.size());
 	jObject.AddMember("key", jKey, allocator);
 
-	document.PushBack(jObject, allocator);
+	bool save = true;
+
+	for (auto& m : document.GetArray()) {
+		if (std::string(m["key"].GetString()) == key) {
+			dbg("包括项 不保存");
+			save = false;
+			break;
+		}
+	}
+
+	if (save) {
+		document.PushBack(jObject, allocator);
+		dbg("不包括项 保存");
+	}
 
 	json::StringBuffer buffer;
 	buffer.Clear();
