@@ -22,7 +22,8 @@ namespace json = rapidjson;
 enum class Method {
 	DOWNLOAD = 1,
 	UPLOAD = 2,
-	OTHER = 3
+	HISTORY = 3,
+	OTHER = 4
 };
 
 bool FileExistsStatus(const char* path)
@@ -176,6 +177,27 @@ void Download(const std::string& key) {
 	return;
 }
 
+void History() {
+	std::ifstream fdata("list.json");
+	std::istreambuf_iterator<char> begin(fdata);
+	std::istreambuf_iterator<char> end;
+	std::string fileData(begin, end);
+
+	json::Document document;
+	document.Parse(fileData.c_str());
+
+	for (auto& m : document.GetArray()) {
+		std::string name = m["name"].GetString(),
+			key = m["key"].GetString();
+		dbg("文件名称", name);
+		dbg("键值", key);
+
+		printf("\n");
+	}
+
+	return;
+}
+
 int main(int argc, char* argv[]) {
 	argparse::ArgumentParser program("CodemaoMaterial");
 
@@ -188,13 +210,14 @@ int main(int argc, char* argv[]) {
 				return Method::UPLOAD;
 			else if (value == "download")
 				return Method::DOWNLOAD;
+			else if (value == "history")
+				return Method::HISTORY;
 			else
 				return Method::OTHER;
 			});
 
 		program.add_argument("-d", "--data")
 			.help("要上传/下载 的 文件名/文件键值")
-			.required()
 			.action([](const std::string& value) { return value; });
 	}
 
@@ -210,17 +233,21 @@ int main(int argc, char* argv[]) {
 	CheckJson();
 
 	Method method = program.get<Method>("method");
-	std::string data = program.get<std::string>("--data");
-
 	dbg(method);
 
 	switch (method) {
 	case Method::UPLOAD: {
+		std::string data = program.get<std::string>("--data");
 		Upload(data);
 		break;
 	}
 	case Method::DOWNLOAD: {
+		std::string data = program.get<std::string>("--data");
 		Download(data);
+		break;
+	}
+	case Method::HISTORY: {
+		History();
 		break;
 	}
 	case Method::OTHER: {
