@@ -6,15 +6,15 @@
 
 ## 特色
 
-- 轻量：无复杂依赖，资源占用少
-- 自由：无文件格式与大小限制，无容量限制
-- 快速：支持多线程传输与断点续传，同时借助你猫的CDN资源，能最大化地利用网络环境进行上传与下载
+-   轻量：无复杂依赖，资源占用少
+-   自由：无文件格式与大小限制，无容量限制
+-   快速：支持多线程传输与断点续传，同时借助你猫的 CDN 资源，能最大化地利用网络环境进行上传与下载
 
 ## 如何使用
 
 ### 编译
 
-首先clone项目
+首先 clone 项目
 
 ```shell
 git clone https://github.com/zHElEARN/CodemaoDrive.git
@@ -24,7 +24,7 @@ git clone git@github.com:zHElEARN/CodemaoDrive.git
 git submodule update --init --recursive
 ```
 
-然后使用cmake生成编译文件，并使用`Visual Studio 2019`进行编译
+然后使用 cmake 生成编译文件，并使用`Visual Studio 2019`进行编译
 
 ```shell
 cd CodemaoDrive
@@ -63,6 +63,14 @@ CodemaoDrive.exe download -d key
 ```
 
 通过键值进行下载
+
+### 历史记录
+
+```shell
+CodemaoDrive.exe histroy
+```
+
+获得保存的历史记录
 
 ## 免责声明
 
