@@ -15,7 +15,7 @@ add_subdirectory(opt/cpr)
 
 include_directories(opt/rapidjson/include)
 include_directories(opt/argparse/include)
-include_directories(opt/dbg-macro)
+include_directories(opt/)
 include_directories(${CPR_INCLUDE_DIRS})
 
 add_executable(CodemaoDrive src/Main.cpp)
