@@ -150,6 +150,21 @@ void Download(const std::string& key) {
 	std::string url = "https://static.codemao.cn/" + key;
 	std::string name = key;
 
+	std::ifstream fdata("list.json");
+	std::istreambuf_iterator<char> begin(fdata);
+	std::istreambuf_iterator<char> end;
+	std::string fileData(begin, end);
+	json::Document document;
+	document.Parse(fileData.c_str());
+
+	for (auto& m : document.GetArray()) {
+		if (std::string(m["key"].GetString()) == key) {
+			name = m["name"].GetString();
+			dbg("存在本地文件名", name);
+			break;
+		}
+	}
+
 	dbg("下载 Url", url);
 
 	bool result = DownloadFiles(url.c_str(), name.c_str());
