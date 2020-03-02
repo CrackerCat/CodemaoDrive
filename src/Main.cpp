@@ -19,28 +19,34 @@
 
 namespace json = rapidjson;
 
-enum class Method {
+enum class Method
+{
 	DOWNLOAD = 1,
 	UPLOAD = 2,
 	HISTORY = 3,
 	OTHER = 4
 };
 
-bool FileExistsStatus(const char* path)
+bool FileExistsStatus(const char *path)
 {
 	DWORD dwAttribute = GetFileAttributes(path);
-	if (dwAttribute == 0XFFFFFFFF) return false;
-	else return true;
+	if (dwAttribute == 0XFFFFFFFF)
+		return false;
+	else
+		return true;
 }
 
-bool DownloadFiles(const char* url, const char* downloadPath)
+bool DownloadFiles(const char *url, const char *downloadPath)
 {
-	if (URLDownloadToFile(NULL, url, downloadPath, 0, 0) == S_OK && FileExistsStatus(downloadPath)) return true;
-	else return false;
+	if (URLDownloadToFile(NULL, url, downloadPath, 0, 0) == S_OK && FileExistsStatus(downloadPath))
+		return true;
+	else
+		return false;
 }
 
-std::string GetPathShortName(std::string strFullName) {
-	auto string_replace = [](std::string& strBig, const std::string& strsrc, const std::string& strdst) {
+std::string GetPathShortName(std::string strFullName)
+{
+	auto string_replace = [](std::string &strBig, const std::string &strsrc, const std::string &strdst) {
 		std::string::size_type pos = 0;
 		std::string::size_type srclen = strsrc.size();
 		std::string::size_type dstlen = strdst.size();
@@ -52,7 +58,8 @@ std::string GetPathShortName(std::string strFullName) {
 		}
 	};
 
- 	if (strFullName.empty()) {
+	if (strFullName.empty())
+	{
 		return "";
 	}
 
@@ -62,35 +69,37 @@ std::string GetPathShortName(std::string strFullName) {
 	return strFullName.substr(iPos, strFullName.length() - iPos);
 }
 
-std::string GetToken() {
+std::string GetToken()
+{
 	std::string token;
 
 	auto response = cpr::Get(
-		cpr::Url{ TOKEN_URL },
-		cpr::UserAgent{ USER_AGENT },
-		cpr::VerifySsl{ false },
+		cpr::Url{TOKEN_URL},
+		cpr::UserAgent{USER_AGENT},
+		cpr::VerifySsl{false},
 		cpr::Parameters{
-			{"from", "static"}
-		}
-	);
+			{"from", "static"}});
 	dbg("获得Token 状态码", response.status_code);
 
 	json::Document document;
 	document.Parse(response.text.c_str());
 
-	token = document["data"][0]["token"].Get<const char*>();
+	token = document["data"][0]["token"].Get<const char *>();
 	dbg("获得Token", token);
 
 	return token;
 }
 
-bool CheckJson() {
-	if (_access("list.json", 0) != 0) {
+bool CheckJson()
+{
+	if (_access("list.json", 0) != 0)
+	{
 		dbg("未创建list.json");
-		FILE* fp;
+		FILE *fp;
 		errno_t err = fopen_s(&fp, "list.json", "w");
 
-		if (err != 0) {
+		if (err != 0)
+		{
 			dbg("创建list.json失败");
 			fclose(fp);
 			return false;
@@ -101,31 +110,31 @@ bool CheckJson() {
 	return true;
 }
 
-void Upload(const std::string& name) {
+void Upload(const std::string &name)
+{
 	dbg("上传", name);
 
 	std::string token = GetToken();
 	auto response = cpr::Post(
-		cpr::Url{ UPLOAD_URL },
-		cpr::UserAgent{ USER_AGENT },
-		cpr::VerifySsl{ false },
+		cpr::Url{UPLOAD_URL},
+		cpr::UserAgent{USER_AGENT},
+		cpr::VerifySsl{false},
 		cpr::Multipart{
 			{"token", token},
-			{"file", cpr::File{name}}
-		}
-	);
+			{"file", cpr::File{name}}});
 
-	if (response.status_code != 200) {
+	if (response.status_code != 200)
+	{
 		dbg("上传 失败", response.status_code);
 		return;
 	}
 	dbg("上传 状态码", response.status_code);
-	
+
 	json::Document upload;
 	upload.Parse(response.text.c_str());
 
-	std::string key = upload["key"].Get<const char*>(),
-		hash = upload["hash"].Get<const char*>();
+	std::string key = upload["key"].Get<const char *>(),
+				hash = upload["hash"].Get<const char *>();
 
 	dbg("上传 哈希", hash);
 	dbg("上传 键值", key);
@@ -139,11 +148,11 @@ void Upload(const std::string& name) {
 	fdata.close();
 
 	json::Document document;
-	json::Document::AllocatorType& allocator = document.GetAllocator();
+	json::Document::AllocatorType &allocator = document.GetAllocator();
 	document.Parse(fileData.c_str());
 
 	json::Value jObject(json::kObjectType);
-	
+
 	std::string shortName = GetPathShortName(name);
 	json::Value jName(json::kStringType);
 	jName.SetString(shortName.c_str(), shortName.size());
@@ -155,15 +164,18 @@ void Upload(const std::string& name) {
 
 	bool save = true;
 
-	for (auto& m : document.GetArray()) {
-		if (std::string(m["key"].GetString()) == key) {
+	for (auto &m : document.GetArray())
+	{
+		if (std::string(m["key"].GetString()) == key)
+		{
 			dbg("包括项 不保存");
 			save = false;
 			break;
 		}
 	}
 
-	if (save) {
+	if (save)
+	{
 		document.PushBack(jObject, allocator);
 		dbg("不包括项 保存");
 	}
@@ -173,10 +185,11 @@ void Upload(const std::string& name) {
 	json::Writer<json::StringBuffer> writer(buffer);
 
 	document.Accept(writer);
-	
-	FILE* fp;
+
+	FILE *fp;
 	errno_t err = fopen_s(&fp, "list.json", "w");
-	if (err != 0) {
+	if (err != 0)
+	{
 		dbg("上传 写list.json失败");
 		return;
 	}
@@ -188,7 +201,8 @@ void Upload(const std::string& name) {
 	return;
 }
 
-void Download(const std::string& key) {
+void Download(const std::string &key)
+{
 	std::string url = "https://static.codemao.cn/" + key;
 	std::string name = key;
 
@@ -199,8 +213,10 @@ void Download(const std::string& key) {
 	json::Document document;
 	document.Parse(fileData.c_str());
 
-	for (auto& m : document.GetArray()) {
-		if (std::string(m["key"].GetString()) == key) {
+	for (auto &m : document.GetArray())
+	{
+		if (std::string(m["key"].GetString()) == key)
+		{
 			name = m["name"].GetString();
 			dbg("存在本地文件名", name);
 			break;
@@ -218,7 +234,8 @@ void Download(const std::string& key) {
 	return;
 }
 
-void History() {
+void History()
+{
 	std::ifstream fdata("list.json");
 	std::istreambuf_iterator<char> begin(fdata);
 	std::istreambuf_iterator<char> end;
@@ -227,9 +244,10 @@ void History() {
 	json::Document document;
 	document.Parse(fileData.c_str());
 
-	for (auto& m : document.GetArray()) {
+	for (auto &m : document.GetArray())
+	{
 		std::string name = m["name"].GetString(),
-			key = m["key"].GetString();
+					key = m["key"].GetString();
 		dbg("文件名称", name);
 		dbg("键值", key);
 
@@ -239,33 +257,36 @@ void History() {
 	return;
 }
 
-int main(int argc, char* argv[]) {
-	argparse::ArgumentParser program("CodemaoMaterial");
+int main(int argc, char *argv[])
+{
+	argparse::ArgumentParser program("CodemaoDrive");
 
 	{
 		program.add_argument("method")
 			.help("选择上传/下载方法")
 			.required()
-			.action([](const std::string& value) {
-			if (value == "upload")
-				return Method::UPLOAD;
-			else if (value == "download")
-				return Method::DOWNLOAD;
-			else if (value == "history")
-				return Method::HISTORY;
-			else
-				return Method::OTHER;
+			.action([](const std::string &value) {
+				if (value == "upload")
+					return Method::UPLOAD;
+				else if (value == "download")
+					return Method::DOWNLOAD;
+				else if (value == "history")
+					return Method::HISTORY;
+				else
+					return Method::OTHER;
 			});
 
 		program.add_argument("-d", "--data")
 			.help("要上传/下载 的 文件名/文件键值")
-			.action([](const std::string& value) { return value; });
+			.action([](const std::string &value) { return value; });
 	}
 
-	try {
+	try
+	{
 		program.parse_args(argc, argv);
 	}
-	catch (const std::runtime_error & err) {
+	catch (const std::runtime_error &err)
+	{
 		std::cout << err.what() << std::endl;
 		std::cout << program;
 		exit(0);
@@ -276,22 +297,27 @@ int main(int argc, char* argv[]) {
 	Method method = program.get<Method>("method");
 	dbg(method);
 
-	switch (method) {
-	case Method::UPLOAD: {
+	switch (method)
+	{
+	case Method::UPLOAD:
+	{
 		std::string data = program.get<std::string>("--data");
 		Upload(data);
 		break;
 	}
-	case Method::DOWNLOAD: {
+	case Method::DOWNLOAD:
+	{
 		std::string data = program.get<std::string>("--data");
 		Download(data);
 		break;
 	}
-	case Method::HISTORY: {
+	case Method::HISTORY:
+	{
 		History();
 		break;
 	}
-	case Method::OTHER: {
+	case Method::OTHER:
+	{
 		std::cout << program;
 		break;
 	}
