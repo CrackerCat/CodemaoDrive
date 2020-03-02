@@ -38,7 +38,7 @@ devenv.exe CodemaoDrive.sln
 
 ```shell
 ▶ .\CodemaoDrive.exe  --help
-Usage: CodemaoMaterial [options] method
+Usage: CodemaoDrive [options] method
 
 Positional arguments:
 method          选择上传/下载方法[Required]
